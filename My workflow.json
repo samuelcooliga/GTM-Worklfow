@@ -1,0 +1,206 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "14a6dc8e-f6f5-4998-b6c0-5ed2cf9c11f8",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "results",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "20c45b0e-0e4d-4234-9506-f82d295b1003",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-3-flash-preview",
+          "mode": "list",
+          "cachedResultName": "models/gemini-3-flash-preview"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an expert Go-To-Market SDR. Analyze the following job description and extract key insights to help sell our CRM infrastructure product.\n\nCompany Name: {{$json.company.display_name}}\nJob Title: {{$json.title}}\nJob Description: {{$json.description}}\n\nReturn ONLY a valid JSON object with the following structure. Do not include markdown formatting or any other text.\n{\n  \"industry\": \"Determine the most likely industry. You MUST choose exactly one value from this array: ['COMPUTER_SOFTWARE', 'INFORMATION_TECHNOLOGY_AND_SERVICES', 'FINANCIAL_SERVICES', 'MARKETING_AND_ADVERTISING', 'TELECOMMUNICATIONS', 'RETAIL']. Do not invent new categories.\",\n  \"target_audience\": \"Who is their primary customer? (e.g., B2B, B2C, Enterprise)\",\n  \"personalized_opener\": \"Write a 1-sentence casual email opener mentioning their hiring needs for a {{$json.title}} and how a robust CRM could help that specific role.\"\n}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        832,
+        0
+      ],
+      "id": "e0d835c0-40d6-47ac-918d-343e3a590517",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "jCaC98OKPf9iqcVk",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        624,
+        0
+      ],
+      "id": "66a57c95-8881-4f9a-a200-7d48eb314dd9",
+      "name": "Wait",
+      "webhookId": "ccf5df8a-e0d6-46ae-944d-22ad694ef5e0"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "company",
+        "name": "={{ $('Split Out').item.json.company.display_name }}",
+        "additionalFields": {
+          "industry": "={{ JSON.parse($json.content.parts[0].text).industry }}"
+        }
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        1184,
+        0
+      ],
+      "id": "03446d74-b919-47a1-b6e8-00612c5e8f5f",
+      "name": "Create a company",
+      "credentials": {
+        "hubspotOAuth2Api": {
+          "id": "yq341Z5mkcyYSKaM",
+          "name": "HubSpot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.adzuna.com/v1/api/jobs/us/search/1",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "app_id",
+              "value": "eb4a109c"
+            },
+            {
+              "name": "app_key",
+              "value": "b011123dd4f400d19fa1fa4b5723a88c"
+            },
+            {
+              "name": "results_per_page",
+              "value": "5"
+            },
+            {
+              "name": "what",
+              "value": "software engineer"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "48347bb9-49dd-495d-8c0a-5bfcbee80fe3",
+      "name": "HTTP Request"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Create a company",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "43412865-6b71-42e6-82bf-793620be6562",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "833ec4b3b5b97deefdfc46ea8fd6117ec0279dd471d2ac3889325b1207a425fd"
+  },
+  "nodeGroups": [],
+  "id": "aBXcPvgUh2075NtR",
+  "tags": []
+}
